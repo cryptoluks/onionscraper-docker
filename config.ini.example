@@ -1,0 +1,12 @@
+[main]
+inputFolder="/roms"
+artworkXml="artwork-onionscraper1.xml"
+cacheMarquees="false"
+cacheTextures="false"
+relativePaths="true"
+gameListBackup="false"
+nameTemplate="%t"
+frontend="emulationstation"
+
+[screenscraper]
+#userCreds="USERNAME:PASSWORD"
