@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 mkdir -p cache
-docker run \
+docker run --rm \
   -v $(pwd)/roms:/roms \
   -v $(pwd)/cache:/root/.skyscraper/cache \
   -v $(pwd)/config.ini:/root/.skyscraper/config.ini \

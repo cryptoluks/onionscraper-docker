@@ -82,5 +82,6 @@ COPY --from=builder /tmp/skyscraper/tgdb_platforms.json /usr/local/etc/skyscrape
 COPY --from=builder /tmp/skyscraper/tgdb_publishers.json /usr/local/etc/skyscraper/tgdb_publishers.json
 
 RUN mkdir -p /root/.skyscraper
-COPY --from=builder /tmp/onionscraper/skyscraper/*.xml /tmp/onionscraper/skyscraper/resources /root/.skyscraper
+COPY --from=builder /tmp/onionscraper/skyscraper/*.xml /root/.skyscraper
+COPY --from=builder /tmp/onionscraper/skyscraper/resources /root/.skyscraper/resources
 COPY --from=builder /tmp/onionscraper/onionscraper /usr/local/bin/onionscraper
