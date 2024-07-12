@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+GAME_LIST="true"
+MODULE="screenscraper"
+SKYSCRAPERINI="$HOME/.skyscraper/config.ini"
+
+if [[ ! -f $SKYSCRAPERINI ]]; then
+    printf "Could not find Skyscraper config file: %s\nAborting.\n" "$SKYSCRAPERINI" >&2
+    exit 1
+fi
+
+usage() {
+    printf "Usage: %s [OPTIONS] [SYSTEMS]\n" "$(basename "$0")"
+    printf "Scrape artwork for new ROMs or for given systems. Helps managing artwork.\n"
+    printf "Options:\n"
+    printf "  -r, --region <region>: Override the default region list.\n"
+    printf "  -h, --help:   Display this help message.\n"
+    printf "Systems:\n"
+    printf "  All parameters after the last option are treated as a list of systems to process.\n"
+    exit 0
+}
+
+declare -A SYSTEM_LIST=(
+    [AMIGA]="amiga"
+    [ARCADE]="mame-libretro"
+    [ATARI]="atari2600"
+    [COLECO]="coleco"
+    [CPC]="amstradcpc"
+    [FC]="nes"
+    [FIFTYTWOHUNDRED]="atari5200"
+    [GB]="gb gbc"
+    [GBA]="gba"
+    [GBC]="gbc"
+    [GG]="gamegear"
+    [INTELLIVISION]="intellivision"
+    [LYNX]="atarilynx"
+    [MD]="megadrive"
+    [MS]="mastersystem"
+    [MSX]="msx"
+    [NDS]="nds"
+    [NEOCD]="neogeocd"
+    [NEOGEO]="neogeo"
+    [NGP]="ngp ngpc"
+    [PCE]="pcengine"
+    [PCECD]="pcenginecd"
+    [PICO]="pico8"
+    [POKE]="pokemini"
+    [PORTS]="ports"
+    [PS]="psx"
+    [SCUMMVM]="scummvm"
+    [SEGACD]="segacd"
+    [SEGASGONE]="sg-1000"
+    [SEVENTYEIGHTHUNDRED]="atari7800"
+    [SFC]="snes"
+    [THIRTYTWOX]="sega32x"
+    [VB]="virtualboy"
+    [VECTREX]="vextrex"
+    [VIDEOPAC]="videopac"
+    [WS]="wonderswan wonderswancolor"
+    [ZXS]="zxspectrum"
+)
+
+scrape_platform() {
+    local system="$1"
+    local platform="$2"
+    local rompath="$3"
+    local region="$4"
+    local module="$5"
+    local gamelist="$6"
+    local img_dir="$rompath/$system/Imgs"
+    local system_dir="$rompath/$system"
+
+    mkdir -p "$img_dir"
+
+    if ! Skyscraper -c "$SKYSCRAPERINI" -p "$platform" -i "$system_dir" -s "$module" $region; then
+        printf "Skyscraper (scrape) failed for system %s, platform %s.\n" "$system" "$platform" >&2
+        return
+    fi
+
+    if ! Skyscraper -c "$SKYSCRAPERINI" -p "$platform" -i "$system_dir" -o "$img_dir"; then
+        printf "Skyscraper (output) failed for system %s, platform %s.\n" "$system" "$platform" >&2
+        return
+    fi
+
+    mv "$img_dir/screenshots/"* "$img_dir/" 2>/dev/null
+    rmdir "$img_dir/covers" "$img_dir/marquees" "$img_dir/screenshots" "$img_dir/textures" "$img_dir/wheels" 2>/dev/null
+
+    sed -i 's/Imgs\/screenshots/Imgs/g' "$system_dir/gamelist.xml"
+
+    xmlstarlet edit \
+        -d "//desc" \
+        -d "//developer" \
+        -d "//genre" \
+        -d "//genreid" \
+        -d "//hash" \
+        -d "//kidgame" \
+        -d "//marquee" \
+        -d "//players" \
+        -d "//publisher" \
+        -d "//rating" \
+        -d "//releasedate" \
+        -d "//texture" \
+        -d "//thumbnail" \
+        -d "//video" \
+        --subnode "gameList/game[not(image)]" -t elem -n image -v "no-img.png" \
+        "$system_dir/gamelist.xml" | xmlstarlet format --encode utf-8 - >"$system_dir/miyoogamelist.xml"
+    sed -i 's/\( *\):\( \+\)/ - /g' "$system_dir/miyoogamelist.xml"
+    rm "$system_dir/gamelist.xml"
+}
+
+region=""
+while [[ "${1-}" =~ ^- ]]; do
+    case "$1" in
+    -h | --help)
+        usage
+        ;;
+    -r | --region)
+        region="--region $2"
+        shift 2
+        ;;
+    *)
+        printf "Unsupported option %s.\n" "$1" >&2
+        usage
+        ;;
+    esac
+done
+
+systems=("$@")
+rompath=$(awk -F'=' '/^inputFolder/ {gsub(/"/, "", $2); print $2}' "$SKYSCRAPERINI")
+mapfile -t systems < <(find "$rompath" -mindepth 1 -maxdepth 1 -type d -printf "%P\n")
+
+for system in "${systems[@]}"; do
+    platforms=${SYSTEM_LIST[$system]}
+
+    if [[ -z "$platforms" ]]; then
+        printf "Unsupported system %s\n" "$system" >&2
+        continue
+    fi
+
+    for platform in $platforms; do
+        scrape_platform "$system" "$platform" "$rompath" "$region" "$MODULE" "$GAME_LIST"
+    done
+done

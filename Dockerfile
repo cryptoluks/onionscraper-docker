@@ -11,7 +11,6 @@ RUN <<-EOF
         g++ \
         gcc \
         git \
-        git \
         make \
         p7zip-full \
         qt5-qmake \
@@ -24,9 +23,7 @@ RUN <<-EOF
 EOF
 
 RUN <<-EOF
-    cd /tmp
-    git clone --depth 1 https://github.com/Gemba/skyscraper
-    git clone --depth 1 https://github.com/y-muller/onionscraper
+    cd /tmp && git clone --depth 1 https://github.com/Gemba/skyscraper
 EOF
 
 RUN <<-EOF
@@ -82,6 +79,5 @@ COPY --from=builder /tmp/skyscraper/tgdb_platforms.json /usr/local/etc/skyscrape
 COPY --from=builder /tmp/skyscraper/tgdb_publishers.json /usr/local/etc/skyscraper/tgdb_publishers.json
 
 RUN mkdir -p /root/.skyscraper
-COPY --from=builder /tmp/onionscraper/skyscraper/*.xml /root/.skyscraper
-COPY --from=builder /tmp/onionscraper/skyscraper/resources /root/.skyscraper/resources
-COPY --from=builder /tmp/onionscraper/onionscraper /usr/local/bin/onionscraper
+COPY onionscraper/onionscraper /usr/local/bin/onionscraper
+COPY onionscraper/skyscraper/artwork.xml /root/.skyscraper/artwork.xml

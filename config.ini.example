@@ -1,6 +1,6 @@
 [main]
 inputFolder="/roms"
-artworkXml="artwork-onionscraper1.xml"
+artworkXml="artwork.xml"
 cacheMarquees="false"
 cacheTextures="false"
 relativePaths="true"
