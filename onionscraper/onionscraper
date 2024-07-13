@@ -109,6 +109,17 @@ scrape_platform() {
         --subnode "gameList/game[not(image)]" -t elem -n image -v "no-img.png" \
         "$system_dir/gamelist.xml" | xmlstarlet format --encode utf-8 - >"$system_dir/miyoogamelist.xml"
     sed -i 's/\( *\):\( \+\)/ - /g' "$system_dir/miyoogamelist.xml"
+    sed -i '
+    s/ä/ae/g; s/Ä/Ae/g;
+    s/ö/oe/g; s/Ö/Oe/g;
+    s/ü/ue/g; s/Ü/Ue/g;
+    s/ß/ss/g;
+    s/é/e/g; s/É/E/g;
+    s/è/e/g; s/È/E/g;
+    s/ê/e/g; s/Ê/E/g;
+    s/à/a/g; s/À/A/g;
+    s/ç/c/g; s/Ç/C/g;
+    ' "$system_dir/miyoogamelist.xml"
     rm "$system_dir/gamelist.xml"
 }
 
